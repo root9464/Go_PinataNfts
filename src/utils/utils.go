@@ -41,7 +41,7 @@ func TestAuthentication() {
 	}
 }
 
-func GetPinataResponseFuncs() (func() (*structs.PinataResponse, error), func()) {
+func GetPinataResponseFuncs() func() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(err)
 	}
@@ -95,5 +95,5 @@ func GetPinataResponseFuncs() (func() (*structs.PinataResponse, error), func()) 
 		}
 	}
 
-	return getPinataResponse, printPinataResponse
+	return printPinataResponse
 }
