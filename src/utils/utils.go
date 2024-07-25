@@ -48,7 +48,7 @@ func GetPinataResponseFuncs() func() {
 	JWT := os.Getenv("USER_TOKEN_JWT")
 	HOST := os.Getenv("PINATA_HOST")
 
-	getPinataResponse := func() (*structs.PinataResponse, error) {
+	getPinataResponse := func() (*structs.PinataResponsePinsList, error) {
 		client := new(http.Client)
 		req, err := http.NewRequest("GET", HOST+"/pinList", nil)
 		if err != nil {
@@ -63,7 +63,7 @@ func GetPinataResponseFuncs() func() {
 		}
 		defer resp.Body.Close()
 
-		pinataResponse := new(structs.PinataResponse)
+		pinataResponse := new(structs.PinataResponsePinsList)
 		err = json.NewDecoder(resp.Body).Decode(pinataResponse)
 		if err != nil {
 			return nil, err
@@ -82,6 +82,7 @@ func GetPinataResponseFuncs() func() {
 		for _, row := range pinataResponse.Rows {
 			fmt.Printf("ID: %s\n", row.ID)
 			fmt.Printf("IpfsPinHash: %s\n", row.IpfsPinHash)
+			fmt.Printf("URL: https://gateway.pinata.cloud/ipfs/%s\n", row.IpfsPinHash)
 			fmt.Printf("Size: %d\n", row.Size)
 			fmt.Printf("UserID: %s\n", row.UserID)
 			fmt.Printf("DatePinned: %s\n", row.DatePinned)
