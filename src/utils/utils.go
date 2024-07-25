@@ -21,7 +21,7 @@ func TestAuthentication() {
 
 	req, err := http.NewRequest("GET", HOST+"/testAuthentication", nil)
 	if err != nil {
-		log.Fatal("err with request", err)
+		log.Fatal("error creating request", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+JWT)
@@ -41,41 +41,51 @@ func TestAuthentication() {
 	}
 }
 
-func GetPinataResponseFuncs() func() {
+func GetPinataResponseFuncs() (func(), func() (*structs.PinataResponsePinsList, string, error)) {
 	if err := godotenv.Load(); err != nil {
 		log.Fatal(err)
 	}
 	JWT := os.Getenv("USER_TOKEN_JWT")
 	HOST := os.Getenv("PINATA_HOST")
 
-	getPinataResponse := func() (*structs.PinataResponsePinsList, error) {
+	getPinataResponse := func() (*structs.PinataResponsePinsList, string, error) {
 		client := new(http.Client)
 		req, err := http.NewRequest("GET", HOST+"/pinList", nil)
 		if err != nil {
-			return nil, err
+			log.Fatal("error creating request", err)
 		}
 
 		req.Header.Set("Authorization", "Bearer "+JWT)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			return nil, err
+			log.Fatal("error sending request", err)
 		}
 		defer resp.Body.Close()
 
-		pinataResponse := new(structs.PinataResponsePinsList)
-		err = json.NewDecoder(resp.Body).Decode(pinataResponse)
+		var pinataResponse structs.PinataResponsePinsList
+		err = json.NewDecoder(resp.Body).Decode(&pinataResponse)
 		if err != nil {
-			return nil, err
+			log.Fatal("error decoding response", err)
 		}
 
-		return pinataResponse, nil
+		for i := range pinataResponse.Rows {
+			pinataResponse.Rows[i].URL = "https://gateway.pinata.cloud/ipfs/" + pinataResponse.Rows[i].IpfsPinHash
+		}
+
+		jsonResponse, err := json.Marshal(pinataResponse)
+		if err != nil {
+			fmt.Println("error convert to json", err)
+		}
+
+		return &pinataResponse, string(jsonResponse), nil
+
 	}
 
 	printPinataResponse := func() {
-		pinataResponse, err := getPinataResponse()
+		pinataResponse, _, err := getPinataResponse()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("error getting pinata response", err)
 		}
 
 		fmt.Printf("Count: %d\n", pinataResponse.Count)
@@ -96,5 +106,5 @@ func GetPinataResponseFuncs() func() {
 		}
 	}
 
-	return printPinataResponse
+	return printPinataResponse, getPinataResponse
 }

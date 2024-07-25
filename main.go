@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-	printPinataResponse := utils.GetPinataResponseFuncs()
+	printPinataResponse, _ := utils.GetPinataResponseFuncs()
 	printPinataResponse()
 }
