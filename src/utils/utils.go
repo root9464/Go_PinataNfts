@@ -11,13 +11,18 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func TestAuthentication() {
+func loadEnv() (string, string) {
 	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal(err)
 	}
-
 	JWT := os.Getenv("USER_TOKEN_JWT")
 	HOST := os.Getenv("PINATA_HOST")
+
+	return JWT, HOST
+}
+
+func TestAuthentication() {
+	JWT, HOST := loadEnv()
 
 	req, err := http.NewRequest("GET", HOST+"/testAuthentication", nil)
 	if err != nil {
@@ -42,11 +47,7 @@ func TestAuthentication() {
 }
 
 func GetPinataResponseFuncs() (func(), func() (*structs.PinataResponsePinsList, string, error)) {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal(err)
-	}
-	JWT := os.Getenv("USER_TOKEN_JWT")
-	HOST := os.Getenv("PINATA_HOST")
+	JWT, HOST := loadEnv()
 
 	getPinataResponse := func() (*structs.PinataResponsePinsList, string, error) {
 		client := new(http.Client)
@@ -99,7 +100,10 @@ func GetPinataResponseFuncs() (func(), func() (*structs.PinataResponsePinsList, 
 			fmt.Printf("DateUnpinned: %s\n", row.DateUnpinned)
 			fmt.Printf("Metadata:\n")
 			fmt.Printf("  Name: %s\n", row.Metadata.Name)
-			fmt.Printf("  Keyvalues: %s\n", row.Metadata.Keyvalues)
+			fmt.Printf("  Keyvalues:\n")
+			for key, value := range row.Metadata.Keyvalues {
+				fmt.Printf("         %s = %v\n", key, value)
+			}
 			fmt.Printf("MimeType: %s\n", row.MimeType)
 			fmt.Printf("NumberOfFiles: %d\n", row.NumberOfFiles)
 			fmt.Println()

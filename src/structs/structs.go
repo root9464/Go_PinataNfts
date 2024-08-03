@@ -19,6 +19,6 @@ type PinataPins struct {
 }
 
 type PinataPinsMetadata struct {
-	Name      string `json:"name"`
-	Keyvalues string `json:"keyvalues"`
+	Name      string                 `json:"name"`
+	Keyvalues map[string]interface{} `json:"keyvalues"`
 }
