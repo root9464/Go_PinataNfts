@@ -8,7 +8,6 @@ import (
 	"log"
 	"path/filepath"
 	"root/src/structs"
-	"sort"
 	"strings"
 	"sync"
 )
@@ -98,84 +97,58 @@ func ResponseData() *bytes.Buffer {
 	return bytes.NewBuffer(jsonData)
 }
 
-func PrintZipData() {
+func PrintData() {
 	r, err := zip.OpenReader("build.zip")
 	if err != nil {
-		log.Fatal("error opening zip file", err)
+		log.Fatal(err)
 	}
 	defer r.Close()
 
+	images := []structs.ImageData{}
 	jsonDataMap := make(map[string]interface{})
-	jsonMutex := new(sync.Mutex)
-
-	imageFiles := make(map[string]bool)
-	imageMutex := new(sync.Mutex)
-
-	wg := new(sync.WaitGroup)
-	var errChan = make(chan error)
 
 	for _, file := range r.File {
 		path := filepath.ToSlash(file.Name)
 
 		if strings.HasPrefix(path, jsonDir) && filepath.Ext(path) == ".json" {
-			wg.Add(1)
-			go func(file *zip.File) {
-				defer wg.Done()
-				data, err := processJSON(file)
-				if err != nil {
-					errChan <- err
-					return
-				}
-
-				filename := strings.TrimSuffix(filepath.Base(file.Name), ".json")
-				jsonMutex.Lock()
-				jsonDataMap[filename] = data
-				jsonMutex.Unlock()
-			}(file)
+			data, err := processJSON(file)
+			if err != nil {
+				log.Println("error:", err)
+				continue
+			}
+			jsonDataMap[strings.TrimSuffix(filepath.Base(file.Name), ".json")] = data
 		}
 
 		if strings.HasPrefix(path, imageDir) && filepath.Ext(path) == ".png" {
-			wg.Add(1)
-			go func(file *zip.File) {
-				defer wg.Done()
-				filename := processImage(file)
-				imageMutex.Lock()
-				imageFiles[filename] = true
-				imageMutex.Unlock()
-			}(file)
+			images = append(images, structs.ImageData{
+				FileName: processImage(file),
+				Data:     nil,
+			})
 		}
 	}
 
-	go func() {
-		wg.Wait()
-		close(errChan)
-	}()
-
-	for err := range errChan {
-		log.Println("error:", err)
+	for i, image := range images {
+		if data, ok := jsonDataMap[strings.TrimSuffix(image.FileName, ".png")]; ok {
+			images[i].Data = data.(*structs.JSONData)
+		}
 	}
 
-	filenames := make([]string, 0, len(imageFiles))
-	for filename := range imageFiles {
-		filenames = append(filenames, filename)
-	}
-
-	sort.Strings(filenames)
-
-	for _, filename := range filenames {
-		filenameWithoutExt := strings.TrimSuffix(filename, ".png")
-		jsonMutex.Lock()
-		data, ok := jsonDataMap[filenameWithoutExt]
-		jsonMutex.Unlock()
-		if ok {
-			fmt.Printf("Имя файла: %s.png\n", filenameWithoutExt)
-			fmt.Println("Json:")
-			for key, value := range data.(map[string]interface{}) {
-				fmt.Printf("     %s = %v\n", key, value)
+	fmt.Println("Images:")
+	for _, image := range images {
+		fmt.Printf("  - %s\n", image.FileName)
+		if image.Data != nil {
+			fmt.Println("    Data:")
+			fmt.Printf("      Name: %s\n", image.Data.Name)
+			fmt.Printf("      Description: %s\n", image.Data.Description)
+			fmt.Printf("      Image: %s\n", image.Data.Image)
+			fmt.Printf("      DNA: %s\n", image.Data.DNA)
+			fmt.Printf("      Edition: %d\n", image.Data.Edition)
+			fmt.Printf("      Date: %d\n", image.Data.Date)
+			fmt.Println("      Attributes:")
+			for _, attr := range image.Data.Attributes {
+				fmt.Printf("        - %s: %s\n", attr.TraitType, attr.Value)
 			}
-			fmt.Println()
-		} else {
-			fmt.Printf("Имя файла: %s.png\nJSON объект не найден\n\n", filenameWithoutExt)
+			fmt.Printf("      Compiler: %s\n", image.Data.Compiler)
 		}
 	}
 }

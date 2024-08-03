@@ -5,6 +5,6 @@ import (
 )
 
 func main() {
-	utils.PrintZipData()
+	utils.PrintData()
 
 }
