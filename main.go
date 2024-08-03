@@ -1,10 +1,13 @@
 package main
 
 import (
+	"log"
 	"root/src/utils"
 )
 
 func main() {
-	printPinataResponse, _ := utils.GetPinataResponseFuncs()
-	printPinataResponse()
+	res := utils.ResponseData()
+
+	log.Print(res)
+
 }

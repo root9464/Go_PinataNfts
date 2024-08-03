@@ -22,3 +22,28 @@ type PinataPinsMetadata struct {
 	Name      string                 `json:"name"`
 	Keyvalues map[string]interface{} `json:"keyvalues"`
 }
+
+type JSONData struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	Image       string      `json:"image"`
+	DNA         string      `json:"dna"`
+	Edition     int         `json:"edition"`
+	Date        int64       `json:"date"`
+	Attributes  []Attribute `json:"attributes"`
+	Compiler    string      `json:"compiler"`
+}
+
+type Attribute struct {
+	TraitType string `json:"trait_type"`
+	Value     string `json:"value"`
+}
+
+type ImageData struct {
+	FileName string    `json:"file_name"`
+	Data     *JSONData `json:"data"`
+}
+
+type Response struct {
+	Images []ImageData `json:"images"`
+}
